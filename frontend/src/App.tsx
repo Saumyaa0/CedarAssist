@@ -1011,7 +1011,7 @@ export default function App() {
                                 <strong>
                                   {(source.document || "Source document")
                                     .replace(/^\d+_/, "")
-                                    .replaceAll("_", " ")
+                                    .replaceAll(/_/g, " ")
                                     .replace(/\.pdf$/i, "")}
                                 </strong>
 
