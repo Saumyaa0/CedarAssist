@@ -30,7 +30,14 @@ async function ollamaFetch(
 ): Promise<any> {
   const response = await fetch(`${OLLAMA_URL}${endpoint}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+  "Content-Type": "application/json",
+  ...(process.env.OLLAMA_API_KEY
+    ? {
+        Authorization: `Bearer ${process.env.OLLAMA_API_KEY}`,
+      }
+    : {}),
+},
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(120_000),
   });
@@ -44,15 +51,42 @@ async function ollamaFetch(
 }
 
 async function embedText(text: string): Promise<number[]> {
-  const result = await ollamaFetch("/api/embed", {
-    model: EMBEDDING_MODEL,
-    input: text,
-  });
+  const apiKey = process.env.GEMINI_API_KEY;
 
-  const embedding = result.embeddings?.[0];
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY is missing from backend/.env");
+  }
+
+  const response = await fetch(
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey,
+      },
+      body: JSON.stringify({
+        model: "models/gemini-embedding-001",
+        content: {
+          parts: [{ text }],
+        },
+      }),
+      signal: AbortSignal.timeout(120_000),
+    }
+  );
+
+  if (!response.ok) {
+    const details = await response.text();
+    throw new Error(
+      `Gemini embedding error (${response.status}): ${details}`
+    );
+  }
+
+  const result = await response.json();
+  const embedding = result.embedding?.values;
 
   if (!Array.isArray(embedding) || embedding.length === 0) {
-    throw new Error("Ollama returned no embedding.");
+    throw new Error("Gemini returned no embedding.");
   }
 
   return embedding;

@@ -78,6 +78,8 @@ app.use((_req, res) => {
   res.status(404).json({ error: "Endpoint not found." });
 });
 
-app.listen(port, () => {
-  console.log(`CedarAssist API listening on http://localhost:${port}`);
+
+app.listen(port, "0.0.0.0", () => {
+  console.log(`CedarAssist API listening on port ${port}`);
 });
+
